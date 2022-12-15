@@ -5,6 +5,7 @@ A very advanced employee management system
 
 import logging
 from dataclasses import dataclass
+from typing import List
 
 
 logging.basicConfig(level=logging.INFO)
@@ -81,9 +82,9 @@ class Company:
     """A company representation"""
 
     title: str
-    employees: list[Employee] = []
+    employees: List[Employee] = []
 
-    def get_ceos(self) -> list[Employee]:
+    def get_ceos(self) -> List[Employee]:
         """Return employees list with role of CEO"""
 
         result = []
@@ -92,7 +93,7 @@ class Company:
                 result.append(employee)
         return result
 
-    def get_managers(self) -> list[Employee]:
+    def get_managers(self) -> List[Employee]:
         """Return employees list with role of manager"""
 
         result = []
@@ -101,7 +102,7 @@ class Company:
                 result.append(employee)
         return result
 
-    def get_developers(self) -> list[Employee]:
+    def get_developers(self) -> List[Employee]:
         """Return employees list with role of developer"""
 
         result = []
