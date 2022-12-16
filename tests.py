@@ -72,6 +72,29 @@ class EmployeeTest(unittest.TestCase):
                 self.instance = system.Employee(good_item0, good_item1, "Dev")
                 self.assertEqual(self.instance.__str__(), (good_item0.strip()+' '+good_item1.strip()))
 
+    def test_take_take_holiday(self):
+        self.instance = system.Employee(self.good_str[0], self.good_str[1], "Dev")
+        for days in range(1,system.Param.VCTN_DAYS_INI.value):
+            before_change = self.instance.vacation_days
+            self.instance.take_not_payout_holiday()
+            self.assertEqual(before_change - 1, self.instance.vacation_days)
+
+    def test_take_holiday_numdays(self):
+        for days in range(system.Param.VCTN_DAYS_INI.value+1,system.Param.VCTN_DAYS_INI.value+25):
+            self.instance = system.Employee(self.good_str[0], self.good_str[1], "Dev")
+            with self.assertRaises(ValueError):
+                self.instance.take_not_payout_holiday(days)
+
+
+
+
+
+
+
+
+
+
+
 
 
 

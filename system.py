@@ -6,12 +6,14 @@ A very advanced employee management system
 import logging
 from dataclasses import dataclass
 from typing import List
-
+import enum
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+class Param(enum.Enum):
+    VCTN_DAYS_INI=25
 
 # noinspection PyTypeChecker
 @dataclass
@@ -21,9 +23,9 @@ class Employee:
     first_name: str
     last_name: str
     role: str
-    vacation_days: int = 25
+    vacation_days: int = Param.VCTN_DAYS_INI
 
-    def __init__(self, first_name: str, last_name: str, role: str, vacation_days = 25):
+    def __init__(self, first_name: str, last_name: str, role: str, vacation_days=25):
         """
 
         :param first_name:
@@ -34,10 +36,10 @@ class Employee:
 
         """
 
-        if self.validate_str(first_name,last_name,role) and self.valadate_vacation_days(vacation_days):
-            self.first_name= first_name.strip().capitalize()
-            self.last_name=last_name.strip().capitalize()
-            self.role=role.strip().capitalize()
+        if self.validate_str(first_name, last_name, role) and self.valadate_vacation_days(vacation_days):
+            self.first_name = first_name.strip().capitalize()
+            self.last_name = last_name.strip().capitalize()
+            self.role = role.strip().capitalize()
             self.vacation_days = vacation_days
 
         else:
@@ -52,14 +54,14 @@ class Employee:
 
         return " ".join(self.fullname)
 
-    def validate_str(self,*args) -> bool:
+    def validate_str(self, *args) -> bool:
         """
         :param param: вхідний парамерт
         :return: True, якщо відповідає вимогам.
 
         Функція перевіряє вхідний параметр на відповідність типу та вимогам до написання імені особи.
         """
-        res= True
+        res = True
         for arg in args:
             res = res and isinstance(arg, str) and arg.strip().isalpha()
         return res
@@ -71,33 +73,43 @@ class Employee:
         :return:
         Функція виконує валідацію кількості днів відпустки
         """
-        return isinstance(days, int) and days> -1 and days < 32
+        return isinstance(days, int) and days > -1 and days < 32
 
+    def take_not_payout_holiday(self, num_days=1) -> None:
+
+        if self.vacation_days < num_days:
+            msg = f"{self} have not enough vacation days. " \
+                  f"Remaining days: {self.vacation_days}. Requested:{num_days}"
+            raise ValueError(msg)
+        else:
+            self.vacation_days -= num_days
+            msg = "Taking a payout. Remaining vacation days: %d" % self.vacation_days
+        logger.info(msg)
+
+
+    def take_payout_holiday(self) -> None:
+        self.remaining = self.vacation_days
+        if self.vacation_days < 5:
+            msg = f"{self} have not enough vacation days. " \
+                  f"Remaining days: %d. Requested: %d" % (self.remaining, 5)
+            raise ValueError(msg)
+        self.vacation_days -= 5
+        msg = "Taking a holiday. Remaining vacation days: %d" % self.remaining
+        logger.info(msg)
 
     def take_holiday(self, payout: bool = False) -> None:
         """Take a single holiday or a payout vacation"""
+        # TODO
+        # функція іде на виліт, як не потрібна
 
-        remaining = self.vacation_days
         if payout:
-            if self.vacation_days < 5:
-                msg = f"{self} have not enough vacation days. " \
-                      f"Remaining days: %d. Requested: %d" % (remaining, 5)
-                raise ValueError(msg)
-            self.vacation_days -= 5
-            msg = "Taking a holiday. Remaining vacation days: %d" % remaining
-            logger.info(msg)
+            self.take_payout_holiday()
         else:
-            if self.vacation_days < 1:
-                remaining = self.vacation_days
-                msg = f"{self} have not enough vacation days. " \
-                      f"Remaining days: %d. Requested: %d" % (remaining, 1)
-                raise ValueError(msg)
-            self.vacation_days -= 1
-            msg = "Taking a payout. Remaining vacation days: %d" % remaining
-            logger.info(msg)
+            self.take_not_payout_holiday()
+
+        # noinspection PyTypeChecker
 
 
-# noinspection PyTypeChecker
 @dataclass
 class HourlyEmployee(Employee):
     """Represents employees who are paid on worked hours base"""
@@ -159,14 +171,14 @@ class Company:
 
         if isinstance(employee, SalariedEmployee):
             msg = (
-                "Paying monthly salary of %.2f to %s"
-            ) % (employee.salary, employee)
+                      "Paying monthly salary of %.2f to %s"
+                  ) % (employee.salary, employee)
             logger.info(f"Paying monthly salary to {employee}")
 
         if isinstance(employee, HourlyEmployee):
             msg = (
-                "Paying %s hourly rate of %.2f for %d hours"
-            ) % (employee, employee.hourly_rate, employee.amount)
+                      "Paying %s hourly rate of %.2f for %d hours"
+                  ) % (employee, employee.hourly_rate, employee.amount)
             logger.info(msg)
 
     def pay_all(self) -> None:
