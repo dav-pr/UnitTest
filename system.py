@@ -23,6 +23,26 @@ class Employee:
     role: str
     vacation_days: int = 25
 
+    def __init__(self, first_name: str, last_name: str, role: str, vacation_days = 25):
+        """
+
+        :param first_name:
+        :param last_name:
+        :param role:
+        :param vacation_days:
+        Ініціалізація параметров та виклик функції, яка виконує валідацію значень.
+
+        """
+
+        if self.validate_str(first_name,last_name,role) and self.valadate_vacation_days(vacation_days):
+            self.first_name= first_name.strip().capitalize()
+            self.last_name=last_name.strip().capitalize()
+            self.role=role.strip().capitalize()
+            self.vacation_days = vacation_days
+
+        else:
+            raise (ValueError)
+
     @property
     def fullname(self):
         return self.first_name, self.last_name
@@ -31,6 +51,28 @@ class Employee:
         """Return a string version of an instance"""
 
         return self.fullname
+
+    def validate_str(self,*args) -> bool:
+        """
+        :param param: вхідний парамерт
+        :return: True, якщо відповідає вимогам.
+
+        Функція перевіряє вхідний параметр на відповідність типу та вимогам до написання імені особи.
+        """
+        res= True
+        for arg in args:
+            res = res and isinstance(arg, str) and arg.strip().isalpha()
+        return res
+
+    def valadate_vacation_days(self, days: int):
+        """
+
+        :param days:
+        :return:
+        Функція виконує валідацію кількості днів відпустки
+        """
+        return isinstance(days, int) and days> -1 and days < 32
+
 
     def take_holiday(self, payout: bool = False) -> None:
         """Take a single holiday or a payout vacation"""
