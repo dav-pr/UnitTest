@@ -50,11 +50,28 @@ class EmployeeTest(unittest.TestCase):
                     self.assertEqual(good_item1.strip(), instance.last_name)
                     self.assertEqual(good_item2.strip(), instance.role)
 
-    def test_full_name(self):
+    def test_full_name(self) -> None:
+        """
+
+        :return:
+        Тестування def fullname(self) класу Employee
+        """
         for good_item0 in self.good_str:
             for good_item1 in self.good_str:
                 self.instance = system.Employee(good_item0, good_item1, "Dev")
                 self.assertEqual(self.instance.fullname, (good_item0.strip(),good_item1.strip()))
+
+    def test_str_magic_method(self) -> None:
+        """
+
+        :return:
+        Тестування def __str__(self) класу Employee
+        """
+        for good_item0 in self.good_str:
+            for good_item1 in self.good_str:
+                self.instance = system.Employee(good_item0, good_item1, "Dev")
+                self.assertEqual(self.instance.__str__(), (good_item0.strip()+' '+good_item1.strip()))
+
 
 
 

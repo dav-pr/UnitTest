@@ -50,7 +50,7 @@ class Employee:
     def __str__(self) -> str:
         """Return a string version of an instance"""
 
-        return self.fullname
+        return " ".join(self.fullname)
 
     def validate_str(self,*args) -> bool:
         """
