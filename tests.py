@@ -1,4 +1,4 @@
-
+import random
 import unittest
 import system
 
@@ -72,19 +72,95 @@ class EmployeeTest(unittest.TestCase):
                 self.instance = system.Employee(good_item0, good_item1, "Dev")
                 self.assertEqual(self.instance.__str__(), (good_item0.strip()+' '+good_item1.strip()))
 
-    def test_take_take_holiday(self):
-        self.instance = system.Employee(self.good_str[0], self.good_str[1], "Dev")
-        for days in range(1,system.Param.VCTN_DAYS_INI.value):
-            before_change = self.instance.vacation_days
-            self.instance.take_not_payout_holiday()
-            self.assertEqual(before_change - 1, self.instance.vacation_days)
+    def test_take_holiday(self) -> None:
+        """
 
-    def test_take_holiday_numdays(self):
+        :return:
+        Тестування вибору відпустки тривалістю за значенням по замовченню.
+        Значення по замовченню system.Param.HLD_MIN_DAY.value
+        У тесті здійснюємо 5 запитів, очікуємо, що залишок відпустки буде дорівнбвати нулю.
+        """
+
+        self.instance = system.Employee(self.good_str[0], self.good_str[1], "Dev")
+        for days in range(0,5):
+            before_change = self.instance.vacation_days
+            self.instance.taking_holiday()
+            self.assertEqual(before_change - system.Param.HLD_MIN_DAY.value,
+                             self.instance.vacation_days)
+
+    def test_holiday_numdays(self) -> None:
+        """
+        :return:
+        Тестування запиту на відпустку тривалість понад встановлений ліміт.
+        Ліміт відпустки задається параметром system.Param.VCTN_DAYS_INI.
+        Тестуємо запит на відпустки в інтервалі [system.Param.VCTN_DAYS_INI+1;
+        system.Param.VCTN_DAYS_INI+24].
+        Очікуємо assertRaises(ValueError)
+        """
         for days in range(system.Param.VCTN_DAYS_INI.value+1,system.Param.VCTN_DAYS_INI.value+25):
             self.instance = system.Employee(self.good_str[0], self.good_str[1], "Dev")
             with self.assertRaises(ValueError):
-                self.instance.take_not_payout_holiday(days)
+                self.instance.taking_holiday(days)
 
+    def test_take_holiday_min(self)-> None:
+        """
+        :return:
+        тестування мінімально можливої тривалості відпустки.
+        Мінімально можлива тривалість відпустки задається параметром system.Param.HLD_MIN_DAY.
+        Тестуємо запит на відпустки в інтервалі [-1;system.Param.HLD_MIN_DAY-1].
+        Очікуємо assertRaises(ValueError)
+        """
+
+        for days in range(-1, system.Param.HLD_MIN_DAY.value):
+            self.instance = system.Employee(self.good_str[0], self.good_str[1], "Dev")
+            with self.assertRaises(ValueError):
+                self.instance.taking_holiday(days)
+
+    def test_take_holiday_rand(self) -> None:
+
+        """
+
+        :return:
+        Тестування отримання відпустки тривалістю від мінімально можливої, що визначається
+        параметром system.Param.HLD_MIN_DAY, до випадкового числа не більше 50.
+        Очікуємо assertRaises(ValueError) у випадку коли запитуємо більше днів ніж залишок та
+        сталу суму отриманих днів та залишку, яка повинна дорівнювати параметру
+        system.Param.VCTN_DAYS_INI
+        """
+        sum_days=0
+        self.instance = system.Employee(self.good_str[0], self.good_str[1], "Dev")
+        for i in range(50):
+            days=random.randint(system.Param.HLD_MIN_DAY.value,50)
+            if days>self.instance.vacation_days:
+                with self.assertRaises(ValueError):
+                    self.instance.taking_holiday(days)
+            else:
+                self.instance.taking_holiday(days)
+                sum_days+=days
+                self.assertEqual(system.Param.VCTN_DAYS_INI.value,
+                                 self.instance.vacation_days+sum_days)
+
+    def testing_payout(self) ->None:
+        """
+
+        :return:
+         Тестування отримання відпустки тривалістю від 1 до випадкового числа не більше 50.
+        Очікуємо assertRaises(ValueError) у випадку коли запитуємо більше днів ніж залишок та
+        сталу суму отриманих днів та залишку, яка повинна дорівнювати параметру
+        system.Param.VCTN_DAYS_INI
+        """
+        sum_days = 0
+        self.instance = system.Employee(self.good_str[0], self.good_str[1], "Dev")
+        for i in range(50):
+            days = random.randint(-5, 50)
+            if days > self.instance.vacation_days or  days < 1:
+                with self.assertRaises(ValueError):
+                    self.instance.taking_payout(days)
+            else:
+                self.instance.taking_payout(days)
+                sum_days += days
+                self.assertEqual(system.Param.VCTN_DAYS_INI.value,
+                                 self.instance.vacation_days + sum_days)
 
 
 

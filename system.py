@@ -13,7 +13,8 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 class Param(enum.Enum):
-    VCTN_DAYS_INI=25
+    VCTN_DAYS_INI = 25
+    HLD_MIN_DAY = 5
 
 # noinspection PyTypeChecker
 @dataclass
@@ -75,27 +76,69 @@ class Employee:
         """
         return isinstance(days, int) and days > -1 and days < 32
 
-    def take_not_payout_holiday(self, num_days=1) -> None:
 
-        if self.vacation_days < num_days:
-            msg = f"{self} have not enough vacation days. " \
-                  f"Remaining days: {self.vacation_days}. Requested:{num_days}"
-            raise ValueError(msg)
-        else:
+    def taking_holiday(self, num_days=Param.HLD_MIN_DAY.value) -> None:
+        """
+
+        :param num_days: кількість днів відпустки, що береться
+        :return:
+        Функція виконує процедуру надання певних днів відпустки. Кількість днів відпустки, що
+        береться визначається параметром num_days. Мінімальна кількість днів відпустки, що
+        може бути надана визначається параметром Param.HLD_MIN_DAY.value.
+        У процесі виконання здійснюється перевірки чи залишок відпустки не меньше кількості днів,
+        що запитується та чи не меньше кількість днів, що запитується мінімальної кількості днів
+        відпустки, що може бути надана. Якщо умова не дотримується, то здійснюється формування
+        відповідного повідомлення та викликається raise ValueError(msg). Якщо умови дотримані, то
+        залишок відпустки зменшується на num_days, та здійснюється запис у логер.
+        """
+
+        if num_days >= Param.HLD_MIN_DAY.value and not self.vacation_days < num_days:
             self.vacation_days -= num_days
-            msg = "Taking a payout. Remaining vacation days: %d" % self.vacation_days
-        logger.info(msg)
-
-
-    def take_payout_holiday(self) -> None:
-        self.remaining = self.vacation_days
-        if self.vacation_days < 5:
-            msg = f"{self} have not enough vacation days. " \
-                  f"Remaining days: %d. Requested: %d" % (self.remaining, 5)
+            msg = f"Taking a holiday {num_days}. Remaining vacation days: {self.vacation_days}"
+            logger.info(msg)
+        else:
+            if not num_days >= Param.HLD_MIN_DAY.value:
+                msg = f"{self} have not enough vacation days. " \
+                    f"Remaining days: {self.vacation_days}. Requested: {num_days}"
+            elif self.vacation_days < num_days:
+                msg = f"{self} Requested minimum possible . " \
+                    f" Minimum  requested days: {Param.HLD_MIN_DAY} " \
+                    f"Requested: {num_days}"
             raise ValueError(msg)
-        self.vacation_days -= 5
-        msg = "Taking a holiday. Remaining vacation days: %d" % self.remaining
-        logger.info(msg)
+
+
+
+    def taking_payout(self, num_days=1) -> None:
+        """
+
+        :param num_days: кількість днів, за які отримується грошова компенсація
+        :return:
+        Функція здійснює зменьшення залишку відпустки шляхом її зменьшення за рахунок днів, за які
+        отримано грошову компенсацію.
+        Кількість днів, за яку надається грошова компенсація визначається  аргументом num_days.
+        У процесі виконання тіла функції здійснюється перевірка чи num_days більше нуля, та чи
+        не більше  залишку днів  відпустки.  Якщо умови дотримані, то
+        залишок відпустки зменшується на num_days, та здійснюється запис у логер.
+        Якщо умова не дотримується, то здійснюється формування
+        відповідного повідомлення та викликається raise ValueError(msg)
+
+        """
+
+            if not self.vacation_days < num_days and num_days > 0:
+                self.vacation_days -= num_days
+                msg = f"Taking a payout {num_days}. Remaining vacation days: {self.vacation_days}"
+                logger.info(msg)
+            else:
+                if self.vacation_days < num_days:
+                    msg = f"{self} have not enough vacation days. " \
+                        f"Remaining days: {self.vacation_days}. Requested:{num_days}"
+                elif not num_days > 0:
+                    msg = f"{self} Requested minimum possible . " \
+                          f" Minimum  requested days: 1 " \
+                          f"Requested: {num_days}"
+
+                raise ValueError(msg)
+
 
     def take_holiday(self, payout: bool = False) -> None:
         """Take a single holiday or a payout vacation"""
@@ -103,9 +146,9 @@ class Employee:
         # функція іде на виліт, як не потрібна
 
         if payout:
-            self.take_payout_holiday()
+            self.taking_holiday()
         else:
-            self.take_not_payout_holiday()
+            self.taking_payout()
 
         # noinspection PyTypeChecker
 
