@@ -1,7 +1,7 @@
 import random
 import unittest
 import system as sm
-from settings import Param
+from settings import Param, LogParam
 
 
 class EmployeeTest(unittest.TestCase):
@@ -97,7 +97,7 @@ class EmployeeTest(unittest.TestCase):
         for days in range(0, 5):
             before_change = self.instance.vacation_days
             self.instance.taking_holiday()
-            self.assertEqual(before_change - sm.Param.HLD_MIN_DAY.value,
+            self.assertEqual(before_change - sm.Param.HLD_MIN_DAY,
                              self.instance.vacation_days)
 
     def test_holiday_numdays(self) -> None:
@@ -109,7 +109,7 @@ class EmployeeTest(unittest.TestCase):
         sm.Param.VCTN_DAYS_INI+24].
         Очікуємо assertRaises(ValueError)
         """
-        for days in range(sm.Param.VCTN_DAYS_INI.value + 1, sm.Param.VCTN_DAYS_INI.value + 25):
+        for days in range(sm.Param.VCTN_DAYS_INI + 1, sm.Param.VCTN_DAYS_INI + 25):
             self.instance = sm.Employee(self.good_str[0], self.good_str[1], "Dev")
             with self.assertRaises(ValueError):
                 self.instance.taking_holiday(days)
@@ -123,7 +123,7 @@ class EmployeeTest(unittest.TestCase):
         Очікуємо assertRaises(ValueError)
         """
 
-        for days in range(-1, sm.Param.HLD_MIN_DAY.value):
+        for days in range(-1, sm.Param.HLD_MIN_DAY):
             self.instance = sm.Employee(self.good_str[0], self.good_str[1], "Dev")
             with self.assertRaises(ValueError):
                 self.instance.taking_holiday(days)
@@ -142,14 +142,14 @@ class EmployeeTest(unittest.TestCase):
         sum_days = 0
         self.instance = sm.Employee(self.good_str[0], self.good_str[1], "Dev")
         for i in range(50):
-            days = random.randint(sm.Param.HLD_MIN_DAY.value, 50)
+            days = random.randint(sm.Param.HLD_MIN_DAY, 50)
             if days > self.instance.vacation_days:
                 with self.assertRaises(ValueError):
                     self.instance.taking_holiday(days)
             else:
                 self.instance.taking_holiday(days)
                 sum_days += days
-                self.assertEqual(sm.Param.VCTN_DAYS_INI.value,
+                self.assertEqual(sm.Param.VCTN_DAYS_INI,
                                  self.instance.vacation_days + sum_days)
 
     def testing_payout(self) -> None:
@@ -171,7 +171,7 @@ class EmployeeTest(unittest.TestCase):
             else:
                 self.instance.taking_payout(days)
                 sum_days += days
-                self.assertEqual(sm.Param.VCTN_DAYS_INI.value,
+                self.assertEqual(sm.Param.VCTN_DAYS_INI,
                                  self.instance.vacation_days + sum_days)
 
     def test_logging_taking_payout(self) -> None:
@@ -183,9 +183,9 @@ class EmployeeTest(unittest.TestCase):
         # тестування повідомлень при штатному отриманні компенсації за дні відпустки
         for day in range(1, 25):
             self.instance = sm.Employee(self.good_str[0], self.good_str[1], "Dev")
-            with self.assertLogs(Param.NAME_LOGGER.value, level='INFO') as cm:
+            with self.assertLogs(LogParam.NAME_LOGGER.value, level='INFO') as cm:
                 self.instance.taking_payout(day)
-            self.assertEqual(cm.output, [f'INFO:{Param.NAME_LOGGER.value}:Taking a payout {day}. Remaining vacation '
+            self.assertEqual(cm.output, [f'INFO:{LogParam.NAME_LOGGER.value}:Taking a payout {day}. Remaining vacation '
                                          f'days: {self.instance.vacation_days}'])
 
     def test_logging_taking_holiday(self) -> None:
@@ -194,9 +194,83 @@ class EmployeeTest(unittest.TestCase):
         :return:
         Тестування логінга метода taking_holiday() класу Employee
         """
-        for day in range(Param.HLD_MIN_DAY.value, 25):
+        for day in range(Param.HLD_MIN_DAY, 25):
             self.instance = sm.Employee(self.good_str[0], self.good_str[1], "Dev")
-            with self.assertLogs(Param.NAME_LOGGER.value, level='INFO') as cm:
+            with self.assertLogs(LogParam.NAME_LOGGER.value, level='INFO') as cm:
                 self.instance.taking_holiday(day)
-            self.assertEqual(cm.output, [f'INFO:{Param.NAME_LOGGER.value}:Taking a holiday {day}. Remaining vacation '
+            self.assertEqual(cm.output, [f'INFO:{LogParam.NAME_LOGGER.value}:Taking a holiday {day}. Remaining vacation '
                                          f'days: {self.instance.vacation_days}'])
+
+
+class HourlyEmployee(unittest.TestCase):
+    bad_str = ["", "Bond1", "1bond", "david@", "@david", "111", 1, 1.68]
+    good_str = ["Bond", "David", "Dev", " Bond", " Bond ", "Bond "]
+
+    def testing_log_work(self) -> None:
+        """
+
+        :return:
+        Тестування методу  log_work() класу HourlyEmployee.
+        """
+
+        #  тестування штатної роботи метода log_work
+        self.instance = sm.HourlyEmployee(self.good_str[0], self.good_str[1], "Dev")
+        sum_hours = 0
+        for hours in range(1, Param.HOURLY_RATE):
+            self.instance.log_work(hours)
+            sum_hours += hours
+            self.assertEqual(sum_hours, self.instance.amount)
+
+    def testing_check_limit_log_work(self) -> None:
+        """
+
+        :return:
+        Метод тестує логіку метода check_limit_log_work  класу HourlyEmployee.
+        Параметров AMOUNT_LIMIT = 302 встановний ліміт годин, які максимально може
+        відпрацювати працівників. Тест перевіряє ініціацію ексепшена у випадку перевищення
+        такого ліміту.
+
+        """
+        self.instance = sm.HourlyEmployee(self.good_str[0], self.good_str[1], "Dev")
+        sum_hours = 0
+        for i in range(365):
+            hours = random.randint(1, Param.HOURLY_RATE)
+            if sum_hours + hours > Param.AMOUNT_LIMIT:
+                with self.assertRaises(ValueError):
+                    self.instance.log_work(hours)
+            else:
+                self.instance.log_work(hours)
+                sum_hours += hours
+                self.assertEqual(sum_hours, self.instance.amount)
+
+
+    def testing_raises_log_work(self) -> None:
+        """
+
+        :return:
+        Тестування методу log_work() класу HourlyEmployee. Очікується raises(ValueError) для
+        значень менше 1 та більше 50.
+        """
+        self.instance = sm.HourlyEmployee(self.good_str[0], self.good_str[1], "Dev")
+        sum_hours = 0
+        for hours in [-1, 0, 51, 60, 99]:
+            with self.assertRaises(ValueError):
+                self.instance.log_work(hours)
+
+    def testinf_logging_log_work(self) -> None:
+        """
+
+        :return:
+        Тестування logging методу log_work() класу HourlyEmployee.
+        """
+        self.instance = sm.HourlyEmployee(self.good_str[0], self.good_str[1], "Dev")
+        sum_hours = 0
+        for hours in range(1, Param.HOURLY_RATE):
+            sum_hours += hours
+            with self.assertLogs(LogParam.NAME_LOGGER.value, level='INFO') as cm:
+                self.instance.log_work(hours)
+            self.assertEqual(cm.output, [f"INFO:{LogParam.NAME_LOGGER.value}:Employee {self.instance.fullname} amount {hours}. Full amount {sum_hours}"])
+
+
+
+

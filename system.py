@@ -6,10 +6,10 @@ A very advanced employee management system
 import logging
 from dataclasses import dataclass
 from typing import List
-from settings import Param
+from settings import Param, LogParam
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(Param.NAME_LOGGER.value)
+logger = logging.getLogger(LogParam.NAME_LOGGER.value)
 logger.setLevel(logging.INFO)
 
 
@@ -88,12 +88,12 @@ class Employee:
         залишок відпустки зменшується на num_days, та здійснюється запис у логер.
         """
 
-        if num_days >= Param.HLD_MIN_DAY.value and not self.vacation_days < num_days:
+        if num_days >= Param.HLD_MIN_DAY and not self.vacation_days < num_days:
             self.vacation_days -= num_days
             msg = f"Taking a holiday {num_days}. Remaining vacation days: {self.vacation_days}"
             logger.info(msg)
         else:
-            if not num_days >= Param.HLD_MIN_DAY.value:
+            if not num_days >= Param.HLD_MIN_DAY:
                 msg = f"{self} have not enough vacation days. " \
                       f"Remaining days: {self.vacation_days}. Requested: {num_days}"
             elif self.vacation_days < num_days:
@@ -151,13 +151,55 @@ class HourlyEmployee(Employee):
     """Represents employees who are paid on worked hours base"""
 
     amount: int = 0
-    hourly_rate: int = 50
+    hourly_rate: int = Param.HOURLY_RATE
+
+    def raise_hours_log_work(self, hours: int) -> None:
+        """
+
+        :param hours: кількість годин, яка додається до відпрацьованих
+        :return:
+        Метод формує повідомлення про причини експшена та викликає raise ValueError(msg).
+        Кількість відпрацьованих годин не може бути меньше 0 та перевищувати ліміт встановлений
+        параметром Param.HOURLY_RATE.
+        """
+
+        if hours < 0:
+            msg = f"{self} hours < 0." \
+                  f"Requested hours:{hours}"
+        else:
+            if hours > Param.HOURLY_RATE:
+                msg = f"{self} hours > {Param.HOURLY_RATE}." \
+                      f"Requested hours:{hours}"
+            else:
+                msg = f"Type of hours not valid. Must \"int\", requested {type(hours)}"
+        raise ValueError(msg)
+
+    def check_limit_log_work(self, hours) -> None:
+        """
+
+        :param hours: кількість годин, яка додається до відпрацьованих
+        :return:
+
+        Параметров AMOUNT_LIMIT = 302 встановний ліміт годин, які максимально може
+        відпрацювати працівників. Метод перевіряє чи не перевіщується такий ліміт, у випадку
+        перевищення - raise ValueError(msg)
+        """
+
+        if self.amount + hours > Param.AMOUNT_LIMIT:
+            msg = f"{self} sum amount and hours > Param.AMOUNT_LIMIT = {Param.AMOUNT_LIMIT}" \
+                  f"Amount hours: {self.amount}. Requested hours:{hours}"
+            raise ValueError(msg)
+
 
     def log_work(self, hours: int) -> None:
         """Log working hours"""
-
-        self.amount += hours
-
+        self.check_limit_log_work(hours)
+        if isinstance(hours, int) and hours > 0 and not hours >  Param.HOURLY_RATE:
+            self.amount += hours
+            msg = f"Employee {self.fullname} amount {hours}. Full amount {self.amount}"
+            logger.info(msg)
+        else:
+            self.raise_hours_log_work(hours)
 
 # noinspection PyTypeChecker
 @dataclass
