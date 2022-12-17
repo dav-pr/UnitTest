@@ -6,15 +6,12 @@ A very advanced employee management system
 import logging
 from dataclasses import dataclass
 from typing import List
-import enum
+from settings import Param
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
+logger = logging.getLogger(Param.NAME_LOGGER.value)
 logger.setLevel(logging.INFO)
 
-class Param(enum.Enum):
-    VCTN_DAYS_INI = 25
-    HLD_MIN_DAY = 5
 
 # noinspection PyTypeChecker
 @dataclass
@@ -76,7 +73,6 @@ class Employee:
         """
         return isinstance(days, int) and days > -1 and days < 32
 
-
     def taking_holiday(self, num_days=Param.HLD_MIN_DAY.value) -> None:
         """
 
@@ -99,14 +95,12 @@ class Employee:
         else:
             if not num_days >= Param.HLD_MIN_DAY.value:
                 msg = f"{self} have not enough vacation days. " \
-                    f"Remaining days: {self.vacation_days}. Requested: {num_days}"
+                      f"Remaining days: {self.vacation_days}. Requested: {num_days}"
             elif self.vacation_days < num_days:
                 msg = f"{self} Requested minimum possible . " \
-                    f" Minimum  requested days: {Param.HLD_MIN_DAY} " \
-                    f"Requested: {num_days}"
+                      f" Minimum  requested days: {Param.HLD_MIN_DAY} " \
+                      f"Requested: {num_days}"
             raise ValueError(msg)
-
-
 
     def taking_payout(self, num_days=1) -> None:
         """
@@ -124,21 +118,20 @@ class Employee:
 
         """
 
-            if not self.vacation_days < num_days and num_days > 0:
-                self.vacation_days -= num_days
-                msg = f"Taking a payout {num_days}. Remaining vacation days: {self.vacation_days}"
-                logger.info(msg)
-            else:
-                if self.vacation_days < num_days:
-                    msg = f"{self} have not enough vacation days. " \
-                        f"Remaining days: {self.vacation_days}. Requested:{num_days}"
-                elif not num_days > 0:
-                    msg = f"{self} Requested minimum possible . " \
-                          f" Minimum  requested days: 1 " \
-                          f"Requested: {num_days}"
+        if not self.vacation_days < num_days and num_days > 0:
+            self.vacation_days -= num_days
+            msg = f"Taking a payout {num_days}. Remaining vacation days: {self.vacation_days}"
+            logger.info(msg)
+        else:
+            if self.vacation_days < num_days:
+                msg = f"{self} have not enough vacation days. " \
+                      f"Remaining days: {self.vacation_days}. Requested:{num_days}"
+            elif not num_days > 0:
+                msg = f"{self} Requested minimum possible . " \
+                      f" Minimum  requested days: 1 " \
+                      f"Requested: {num_days}"
 
-                raise ValueError(msg)
-
+            raise ValueError(msg)
 
     def take_holiday(self, payout: bool = False) -> None:
         """Take a single holiday or a payout vacation"""
