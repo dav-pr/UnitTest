@@ -100,6 +100,7 @@ class Company:
         if not isinstance(title.strip(), str):
             res = False
         for i in title:
+            res = False
             if i.isalnum():
                 res = True
                 break
