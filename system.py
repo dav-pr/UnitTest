@@ -30,7 +30,7 @@ class Employee:
     def __str__(self) -> str:
         """Return a string version of an instance"""
 
-        return self.fullname
+        return str(self.fullname)
 
     def take_holiday(self, payout: bool = False) -> None:
         """Take a single holiday or a payout vacation"""
@@ -82,8 +82,9 @@ class Company:
     """A company representation"""
 
     def __init__(self, title: str, employees: List[Employee]):
-        self.title = title
-        self.employees = employees
+        if self.validate(title, employees):
+            self.title = title
+            self.employees = employees
 
     def __repr__(self):
         return self.title
@@ -91,13 +92,25 @@ class Company:
     def __str__(self):
         return self.title
 
-    def get_employees_by_role(self, employee_role: str):
-        """Creating employees list according to the role"""
-        employees_by_role = []
-        for employee in self.employees:
-            if employee.role == employee_role:
-                employees_by_role.append(employee)
-        return employees_by_role
+    @staticmethod
+    def validate(title, employees):
+        """Функція перевіряє вхідний параметр на відповідність типам вхідних даних"""
+
+        res = True
+        if not isinstance(title, str):
+            res = False
+        for employee in employees:
+            if not isinstance(employee, Employee):
+                res = False
+        return res
+
+    def get_employees_by_role(self, employee_role: str) -> List[Employee]:
+        """
+        :param employee_role:
+        :return:
+        Creating employees list according to the role
+        """
+        return list(filter(lambda x: x.role == employee_role, self.employees))
 
     def get_ceos(self) -> List[Employee]:
         """Return employees list with role of CEO"""
@@ -135,4 +148,3 @@ class Company:
 
         for employee in self.employees:
             self.pay(employee)
-
