@@ -21,7 +21,7 @@ class Role:
     def __init__(self, role: str) -> None:
 
         if self.validate_name(role):
-            self.role = role
+            self.role = role.strip()
         else:
             raise ValueError(f"{self} Name of role does not meet the requirements: {role}")
 
@@ -81,6 +81,15 @@ class Employee:
 
         else:
             msg = f"None validate names or vacation_days."
+            raise ValueError(msg)
+
+    def __eq__(self, other) -> bool:
+
+        if isinstance(other, Employee):
+            return self.first_name == other.first_name and self.last_name == other.last_name
+
+        else:
+            msg=f"{other} is not Employee type"
             raise ValueError(msg)
 
     @property
@@ -287,8 +296,45 @@ class SalariedEmployee(Employee):
 class Company:
     """A company representation"""
 
-    title: str
-    employees: List[Employee] = []
+    def __init__(self, title: str, employees: List[Employee] = None):
+        if self.validate_name(title):
+            self.title = title.strip()
+        else:
+            msg=f"{self} Not valid title: {title}"
+            raise ValueError(msg)
+        if self.validate_employees(employees):
+            if employees is None:
+                self.employees =[]
+            else:
+                self.employees = employees
+
+
+    @staticmethod
+
+    def validate_employees(employees:List[Employee]) -> bool:
+        """Функція перевіряє вхідний параметр на відповідність типам вхідних даних"""
+        if employees is not None:
+            for item in employees:
+                if not isinstance(item,Employee):
+                    return False
+            return True
+        else:
+            return True
+
+    @staticmethod
+    def validate_name(name: str) -> bool:
+        return isinstance(name, str) and name.strip().isalnum()
+
+    def add_employee(self, *args):
+        for arg in args:
+            if isinstance(arg, Employee):
+                if arg not in self.employees:
+                    self.employees.append(arg)
+            else:
+                msg=f"{arg} is not type Employee"
+                raise ValueError
+
+
 
     def get_employees_by_role(self, employee_role: str) -> List[Employee]:
         """

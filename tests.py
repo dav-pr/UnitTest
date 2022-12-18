@@ -20,14 +20,26 @@ class EmployeeTest(unittest.TestCase):
         Тестування правильності ініціалізації параметров.
         Даний тест не виконує валідацію введених даний, а просто перевіряя правильність передачі даних при ініціалізації
         """
-        self.instance = sm.Employee("David", "Bond", "Dev", 1)
+        self.instance = sm.Employee("David", "Bond", "DEV", 1)
         self.assertEqual("David", self.instance.first_name)
         self.assertEqual("Bond", self.instance.last_name)
-        self.assertEqual("Dev", self.instance.role)
+        self.assertEqual("DEV", self.instance.role)
         self.assertEqual(1, self.instance.vacation_days)
         self.instance = sm.Employee("David", "Bond", "Dev")
         # перевірки ініціалізації vacation_days по замовченню
         self.assertEqual(25, self.instance.vacation_days)
+
+        # перевірка роботи capitalize()
+        self.instance = sm.Employee("david", "bond", "dev")
+        self.assertNotEqual("david", self.instance.first_name)
+        self.assertNotEqual("bond", self.instance.last_name)
+        self.assertEqual("dev", self.instance.role)
+
+        # перевірка роботи strip()
+        self.instance = sm.Employee("  David ", " bond ", " Dev ")
+        self.assertEqual("David", self.instance.first_name)
+        self.assertEqual("Bond", self.instance.last_name)
+        self.assertEqual("Dev", self.instance.role)
 
     def test_validate(self):
         """
@@ -198,8 +210,9 @@ class EmployeeTest(unittest.TestCase):
             self.instance = sm.Employee(self.good_str[0], self.good_str[1], "Dev")
             with self.assertLogs(LogParam.NAME_LOGGER.value, level='INFO') as cm:
                 self.instance.taking_holiday(day)
-            self.assertEqual(cm.output, [f'INFO:{LogParam.NAME_LOGGER.value}:Taking a holiday {day}. Remaining vacation '
-                                         f'days: {self.instance.vacation_days}'])
+            self.assertEqual(cm.output,
+                             [f'INFO:{LogParam.NAME_LOGGER.value}:Taking a holiday {day}. Remaining vacation '
+                              f'days: {self.instance.vacation_days}'])
 
 
 class HourlyEmployee(unittest.TestCase):
@@ -212,7 +225,6 @@ class HourlyEmployee(unittest.TestCase):
         :return:
 
         """
-
 
     def testing_log_work(self) -> None:
         """
@@ -251,7 +263,6 @@ class HourlyEmployee(unittest.TestCase):
                 sum_hours += hours
                 self.assertEqual(sum_hours, self.instance.amount)
 
-
     def testing_raises_log_work(self) -> None:
         """
 
@@ -277,7 +288,8 @@ class HourlyEmployee(unittest.TestCase):
             sum_hours += hours
             with self.assertLogs(LogParam.NAME_LOGGER.value, level='INFO') as cm:
                 self.instance.log_work(hours)
-            self.assertEqual(cm.output, [f"INFO:{LogParam.NAME_LOGGER.value}:Employee {self.instance.fullname} amount {hours}. Full amount {sum_hours}"])
+            self.assertEqual(cm.output, [
+                f"INFO:{LogParam.NAME_LOGGER.value}:Employee {self.instance.fullname} amount {hours}. Full amount {sum_hours}"])
 
 
 class TestSalariedEmployee(unittest.TestCase):
@@ -292,19 +304,11 @@ class TestSalariedEmployee(unittest.TestCase):
         # перевірки ініціалізації vacation_days по замовченню
         self.assertEqual(25, self.instance.vacation_days)
 
+    def test_init_raises(self):
 
-    def test_init_raises (self):
-
-        for salary_value in [1.25, "test", "100", 0, Param.SALARY_LIMIT+1]:
+        for salary_value in [1.25, "test", "100", 0, Param.SALARY_LIMIT + 1]:
             with self.assertRaises(ValueError):
-                self.instance = sm.SalariedEmployee("David", "Bond", "Dev", salary = salary_value)
-
-
-
-
-
-
-
+                self.instance = sm.SalariedEmployee("David", "Bond", "Dev", salary=salary_value)
 
     def test_validate_salary(self) -> None:
         """
@@ -318,48 +322,79 @@ class TestSalariedEmployee(unittest.TestCase):
         """
         self.instance = sm.SalariedEmployee("Bond", "David", "Dev")
 
-        bad_values= [1.25, "test", "100", 0, Param.SALARY_LIMIT+1]
+        bad_values = [1.25, "test", "100", 0, Param.SALARY_LIMIT + 1]
         # очікувана поведінка повернення False
         for item in bad_values:
             res = self.instance.validate_salary(item)
             self.assertEqual(res, False)
 
         # очікувана поведінка повернення True
-        for values in range(1, Param.SALARY_LIMIT+1):
+        for values in range(1, Param.SALARY_LIMIT + 1):
             res = self.instance.validate_salary(values)
             self.assertEqual(res, True)
+
 
 class TestRoles(unittest.TestCase):
 
     def test_add_roles(self):
-        roles_str = ['CEO', "manager", "dev", 'CEO', "manager", "dev"]
-        res_list=['CEO', "manager", "dev"]
+        roles_str = ['CEO', "manager", " dev", 'CEO', " manager ", "dev"]
+        res_list = ['CEO', "manager", "dev"]
         roles = sm.Roles()
 
-        for i in roles_str:
-            if i not in roles.list_of_roles:
-                roles.add_role(i)
-            else:
-                with self.assertRaises(ValueError):
-                    roles.add_role(i)
+        for i in res_list:
+            roles.add_role(i)
 
+        for i in roles_str:
+            with self.assertRaises(ValueError):
+                roles.add_role(i)
 
     def test_get_employee_by_role(self):
-        company = sm.Company()
+        company = sm.Company("one")
+        company1 = sm.Company("too")
+        company1.employees.append(sm.Employee("David", "Bond", "CEO", 1))
         company.employees.append(sm.Employee("David", "Bond", "Dev", 1))
         company.employees.append(sm.Employee("David", "Bond", "CEO", 1))
         company.employees.append(sm.Employee("David", "Bond", "manager", 1))
-        res=company.get_employees_by_role("CEO")
+        res = company.get_employees_by_role("CEO")
+        self.assertListEqual(res, company1.employees)
 
 
+class TestCompany(unittest.TestCase):
+    emp1 = sm.Employee("David", "Bond", "DEV", 1)
+    emp2 = sm.Employee("David", "Bond", "CEO")
+    emp3 = sm.HourlyEmployee("Jack", "Daniels", "CEO")
+    emp4 = sm.SalariedEmployee("Jim", "beem", "DEV")
+    test_set = [emp1, emp2, emp3, emp4]
+    company = sm.Company("test")
 
+    def test_validate_company_name(self):
+        names = ["", " ", "@ddf", "???", ".", ".!@", "asdf, asdf", 1, 1.5]
+        for name in names:
+            with self.assertRaises(ValueError):
+                company = sm.Company(name)
 
+        names = [" AsD ", "asD, asd", "M&M"]
+        for name in names:
+            company = sm.Company(name)
+            self.assertEqual(company.title, name.strip())
 
+    def test_validate_employees(self):
 
+        self.assertEqual(self.company.validate_employees(self.test_set), True)
+        self.assertEqual(self.company.validate_employees([]), True)
+        self.assertEqual(self.company.validate_employees(None), True)
 
+    def test_add_employee(self):
 
+        if self.company.employees is not None:
+            self.company.employees.clear()
 
+        for item in self.test_set:
+            self.company.add_employee(item)
 
+        company1 = sm.Company("one")
+        company1.add_employee(self.emp1, self.emp3, self.emp4)
+        self.assertListEqual(self.company.employees, company1.employees)
 
 
 
