@@ -10,6 +10,8 @@ class Param(enum.IntEnum):
     HOURLY_RATE = 50
     AMOUNT_LIMIT = 302
     SALARY_LIMIT = 10_000
+    SALARY_DEFAULT = 5_000
+
 
 
 class LogParam(enum.Enum):

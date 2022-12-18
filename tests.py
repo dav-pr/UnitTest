@@ -206,6 +206,14 @@ class HourlyEmployee(unittest.TestCase):
     bad_str = ["", "Bond1", "1bond", "david@", "@david", "111", 1, 1.68]
     good_str = ["Bond", "David", "Dev", " Bond", " Bond ", "Bond "]
 
+    def test_init(self):
+        """
+
+        :return:
+
+        """
+
+
     def testing_log_work(self) -> None:
         """
 
@@ -274,6 +282,30 @@ class HourlyEmployee(unittest.TestCase):
 
 class TestSalariedEmployee(unittest.TestCase):
 
+    def test_init(self):
+        self.instance = sm.SalariedEmployee("David", "Bond", "Dev", 1)
+        self.assertEqual("David", self.instance.first_name)
+        self.assertEqual("Bond", self.instance.last_name)
+        self.assertEqual("Dev", self.instance.role)
+        self.assertEqual(1, self.instance.vacation_days)
+        self.instance = sm.Employee("David", "Bond", "Dev")
+        # перевірки ініціалізації vacation_days по замовченню
+        self.assertEqual(25, self.instance.vacation_days)
+
+
+    def test_init_raises (self):
+
+        for salary_value in [1.25, "test", "100", 0, Param.SALARY_LIMIT+1]:
+            with self.assertRaises(ValueError):
+                self.instance = sm.SalariedEmployee("David", "Bond", "Dev", salary = salary_value)
+
+
+
+
+
+
+
+
     def test_validate_salary(self) -> None:
         """
 
@@ -289,15 +321,43 @@ class TestSalariedEmployee(unittest.TestCase):
         bad_values= [1.25, "test", "100", 0, Param.SALARY_LIMIT+1]
         # очікувана поведінка повернення False
         for item in bad_values:
-            self.instance.salary = item
-            res = self.instance.validate_salary()
+            res = self.instance.validate_salary(item)
             self.assertEqual(res, False)
 
         # очікувана поведінка повернення True
         for values in range(1, Param.SALARY_LIMIT+1):
-            self.instance.salary = values
-            res = self.instance.validate_salary()
+            res = self.instance.validate_salary(values)
             self.assertEqual(res, True)
+
+class TestRoles(unittest.TestCase):
+
+    def test_add_roles(self):
+        roles_str = ['CEO', "manager", "dev", 'CEO', "manager", "dev"]
+        res_list=['CEO', "manager", "dev"]
+        roles = sm.Roles()
+
+        for i in roles_str:
+            if i not in roles.list_of_roles:
+                roles.add_role(i)
+            else:
+                with self.assertRaises(ValueError):
+                    roles.add_role(i)
+
+
+    def test_get_employee_by_role(self):
+        company = sm.Company()
+        company.employees.append(sm.Employee("David", "Bond", "Dev", 1))
+        company.employees.append(sm.Employee("David", "Bond", "CEO", 1))
+        company.employees.append(sm.Employee("David", "Bond", "manager", 1))
+        res=company.get_employees_by_role("CEO")
+
+
+
+
+
+
+
+
 
 
 

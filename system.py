@@ -13,9 +13,44 @@ logger = logging.getLogger(LogParam.NAME_LOGGER.value)
 logger.setLevel(logging.INFO)
 
 
-#TODO
+# TODO
+@dataclass
+class Role:
+    role: str
+
+    def __init__(self, role: str) -> None:
+
+        if self.validate_name(role):
+            self.role = role
+        else:
+            raise ValueError(f"{self} Name of role does not meet the requirements: {role}")
+
+    @staticmethod
+    def validate_name(role: str) -> bool:
+        return isinstance(role, str) and role.strip().isalpha()
+
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return self.role == other
+        elif isinstance(other, Role):
+            return self.role == other.role
+        else:
+            raise TypeError
+
+
+# noinspection PyTypeChecker
+
 class Roles:
-    ...
+    list_of_roles: List[Role] = []
+
+    def add_role(self, name_role: str) -> None:
+        role_inst = Role(name_role)
+        if role_inst not in self.list_of_roles:
+            self.list_of_roles.append(role_inst)
+        else:
+            msg = f"{self} Role already exists: {name_role}"
+            raise ValueError(msg)
+
 
 # noinspection PyTypeChecker
 @dataclass
@@ -27,7 +62,7 @@ class Employee:
     role: str
     vacation_days: int = Param.VCTN_DAYS_INI
 
-    def __init__(self, first_name: str, last_name: str, role: str, vacation_days=25):
+    def __init__(self, first_name: str, last_name: str, role: str, vacation_days=Param.VCTN_DAYS_INI):
         """
 
         :param first_name:
@@ -41,11 +76,12 @@ class Employee:
         if self.validate_str(first_name, last_name, role) and self.valadate_vacation_days(vacation_days):
             self.first_name = first_name.strip().capitalize()
             self.last_name = last_name.strip().capitalize()
-            self.role = role.strip().capitalize()
+            self.role = role.strip()
             self.vacation_days = vacation_days
 
         else:
-            raise (ValueError)
+            msg = f"None validate names or vacation_days."
+            raise ValueError(msg)
 
     @property
     def fullname(self):
@@ -56,7 +92,8 @@ class Employee:
 
         return " ".join(self.fullname)
 
-    def validate_str(self, *args) -> bool:
+    @staticmethod
+    def validate_str(*args) -> bool:
         """
         :param param: вхідний парамерт
         :return: True, якщо відповідає вимогам.
@@ -68,7 +105,8 @@ class Employee:
             res = res and isinstance(arg, str) and arg.strip().isalpha()
         return res
 
-    def valadate_vacation_days(self, days: int):
+    @staticmethod
+    def valadate_vacation_days(days: int):
         """
 
         :param days:
@@ -194,16 +232,16 @@ class HourlyEmployee(Employee):
                   f"Amount hours: {self.amount}. Requested hours:{hours}"
             raise ValueError(msg)
 
-
     def log_work(self, hours: int) -> None:
         """Log working hours"""
         self.check_limit_log_work(hours)
-        if isinstance(hours, int) and hours > 0 and not hours >  Param.HOURLY_RATE:
+        if isinstance(hours, int) and hours > 0 and not hours > Param.HOURLY_RATE:
             self.amount += hours
             msg = f"Employee {self.fullname} amount {hours}. Full amount {self.amount}"
             logger.info(msg)
         else:
             self.raise_hours_log_work(hours)
+
 
 # noinspection PyTypeChecker
 @dataclass
@@ -214,9 +252,27 @@ class SalariedEmployee(Employee):
 
     """
 
-    salary: int = 5000
+    salary: int = Param.SALARY_DEFAULT
 
-    def validate_salary(self):
+    def __init__(self, first_name: str, last_name: str, role: str, vacation_days=Param.VCTN_DAYS_INI,
+                 salary=Param.SALARY_DEFAULT):
+        """
+
+        :param first_name:
+        :param last_name:
+        :param role:
+        :param vacation_days:
+        :param salary:
+        """
+        super().__init__(first_name, last_name, role, vacation_days)
+        if self.validate_salary(salary):
+            self.salary = salary
+        else:
+            msg = f"{self} Salary does not meet the requirements"
+            raise ValueError(msg)
+
+    @staticmethod
+    def validate_salary(salary):
         """
 
         :return:
@@ -224,7 +280,7 @@ class SalariedEmployee(Employee):
         Param.SALARY_LIMIT (включно). Також  атрибут salary класу SalariedEmployee повинен бути типу int.
         У випадку відповідності цим умовам метод повертає True, у протилежному випадку провертає False.
         """
-        return isinstance(self.salary, int) and self.salary > 0 and not self.salary > Param.SALARY_LIMIT
+        return isinstance(salary, int) and salary > 0 and not salary > Param.SALARY_LIMIT
 
 
 # noinspection PyTypeChecker
@@ -233,6 +289,14 @@ class Company:
 
     title: str
     employees: List[Employee] = []
+
+    def get_employees_by_role(self, employee_role: str) -> List[Employee]:
+        """
+        :param employee_role:
+        :return:
+        Creating employees list according to the role
+        """
+        return list(filter(lambda x: x.role == employee_role, self.employees))
 
     def get_ceos(self) -> List[Employee]:
         """Return employees list with role of CEO"""
