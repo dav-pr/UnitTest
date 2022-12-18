@@ -97,8 +97,12 @@ class Company:
         """Функція перевіряє вхідний параметр на відповідність типам вхідних даних"""
 
         res = True
-        if not isinstance(title, str):
+        if not isinstance(title.strip(), str):
             res = False
+        for i in title:
+            if i.isalnum():
+                res = True
+                break
         for employee in employees:
             if not isinstance(employee, Employee):
                 res = False
