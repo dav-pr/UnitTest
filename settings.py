@@ -2,7 +2,6 @@
 Settings for advanced employee management system
 """
 import enum
-print(enum.__file__)
 
 
 class Param(enum.IntEnum):
@@ -10,6 +9,7 @@ class Param(enum.IntEnum):
     HLD_MIN_DAY = 5
     HOURLY_RATE = 50
     AMOUNT_LIMIT = 302
+    SALARY_LIMIT = 10_000
 
 
 class LogParam(enum.Enum):

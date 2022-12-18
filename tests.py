@@ -272,5 +272,34 @@ class HourlyEmployee(unittest.TestCase):
             self.assertEqual(cm.output, [f"INFO:{LogParam.NAME_LOGGER.value}:Employee {self.instance.fullname} amount {hours}. Full amount {sum_hours}"])
 
 
+class TestSalariedEmployee(unittest.TestCase):
+
+    def test_validate_salary(self) -> None:
+        """
+
+        :return:
+        Тестування методу validate_salary() класу SalariedEmployee.
+        Атрибут salary класу SalariedEmployee повинен перебувати у діапазоні від 1 (включно) до
+        Param.SALARY_LIMIT (включно). Також  атрибут salary класу SalariedEmployee повинен бути типу int.
+        У випадку відповідності цим умовам метод повертає True, у протилежному випадку провертає False.
+
+        """
+        self.instance = sm.SalariedEmployee("Bond", "David", "Dev")
+
+        bad_values= [1.25, "test", "100", 0, Param.SALARY_LIMIT+1]
+        # очікувана поведінка повернення False
+        for item in bad_values:
+            self.instance.salary = item
+            res = self.instance.validate_salary()
+            self.assertEqual(res, False)
+
+        # очікувана поведінка повернення True
+        for values in range(1, Param.SALARY_LIMIT+1):
+            self.instance.salary = values
+            res = self.instance.validate_salary()
+            self.assertEqual(res, True)
+
+
+
 
 

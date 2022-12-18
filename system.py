@@ -13,6 +13,10 @@ logger = logging.getLogger(LogParam.NAME_LOGGER.value)
 logger.setLevel(logging.INFO)
 
 
+#TODO
+class Roles:
+    ...
+
 # noinspection PyTypeChecker
 @dataclass
 class Employee:
@@ -204,9 +208,23 @@ class HourlyEmployee(Employee):
 # noinspection PyTypeChecker
 @dataclass
 class SalariedEmployee(Employee):
-    """Represents employees who are paid on a monthly salary base"""
+    """Represents employees who are paid on a monthly salary base
+    Максимальний розмір  salary обмежений параметром Param.SALARY_LIMIT.
+    Salary може дорівнювати Param.SALARY_LIMIT, але не може бути більше його.
+
+    """
 
     salary: int = 5000
+
+    def validate_salary(self):
+        """
+
+        :return:
+        Атрибут salary класу SalariedEmployee повинен перебувати у діапазоні від 1 (включно) до
+        Param.SALARY_LIMIT (включно). Також  атрибут salary класу SalariedEmployee повинен бути типу int.
+        У випадку відповідності цим умовам метод повертає True, у протилежному випадку провертає False.
+        """
+        return isinstance(self.salary, int) and self.salary > 0 and not self.salary > Param.SALARY_LIMIT
 
 
 # noinspection PyTypeChecker
