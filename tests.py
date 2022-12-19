@@ -237,9 +237,13 @@ class HourlyEmployee(unittest.TestCase):
         self.instance = sm.HourlyEmployee(self.good_str[0], self.good_str[1], "Dev")
         sum_hours = 0
         for hours in range(1, Param.HOURLY_RATE):
-            self.instance.log_work(hours)
-            sum_hours += hours
-            self.assertEqual(sum_hours, self.instance.amount)
+            if sum_hours + hours > Param.AMOUNT_LIMIT:
+                with self.assertRaises(ValueError):
+                    self.instance.log_work(hours)
+            else:
+                self.instance.log_work(hours)
+                sum_hours += hours
+                self.assertEqual(sum_hours, self.instance.amount)
 
     def testing_check_limit_log_work(self) -> None:
         """
@@ -285,11 +289,12 @@ class HourlyEmployee(unittest.TestCase):
         self.instance = sm.HourlyEmployee(self.good_str[0], self.good_str[1], "Dev")
         sum_hours = 0
         for hours in range(1, Param.HOURLY_RATE):
-            sum_hours += hours
-            with self.assertLogs(LogParam.NAME_LOGGER.value, level='INFO') as cm:
-                self.instance.log_work(hours)
-            self.assertEqual(cm.output, [
-                f"INFO:{LogParam.NAME_LOGGER.value}:Employee {self.instance.fullname} amount {hours}. Full amount {sum_hours}"])
+            if not sum_hours + hours > Param.AMOUNT_LIMIT:
+                sum_hours += hours
+                with self.assertLogs(LogParam.NAME_LOGGER.value, level='INFO') as cm:
+                    self.instance.log_work(hours)
+                self.assertEqual(cm.output, [
+                    f"INFO:{LogParam.NAME_LOGGER.value}:Employee {self.instance.fullname} amount {hours}. Full amount {sum_hours}"])
 
 
 class TestSalariedEmployee(unittest.TestCase):
@@ -336,17 +341,56 @@ class TestSalariedEmployee(unittest.TestCase):
 
 class TestRoles(unittest.TestCase):
 
+    def test_next(self):
+        # список, який містить повтори ролей
+        roles_str = ['CEO', "manager", " dev", 'CEO', " manager ", "dev"]
+        # список, який містить лише унікальні ролі
+        res_list = ['CEO', "manager", "dev"]
+        roles = sm.Roles()
+
+        # додаємо лише унікальні ролі
+        for i in res_list:
+            roles.add_role(i)
+
+        for idx, item in enumerate(roles):
+            self.assertEqual(res_list[idx], item)
+
+
     def test_add_roles(self):
+        # список, який містить повтори ролей
+        roles_str = ['CEO', "manager", " dev", 'CEO', " manager ", "dev"]
+        # список, який містить лише унікальні ролі
+        res_list = ['CEO', "manager", "dev"]
+        roles = sm.Roles()
+
+        # додаємо лише унікальні ролі
+        for i in res_list:
+            roles.add_role(i)
+
+        # додаємо ролі, які місять дублікати. Очікуємо raises ValueError
+        for i in roles_str:
+            with self.assertRaises(ValueError):
+                roles.add_role(i)
+        pass
+
+    def test_add_roles_warning_off(self):
         roles_str = ['CEO', "manager", " dev", 'CEO', " manager ", "dev"]
         res_list = ['CEO', "manager", "dev"]
         roles = sm.Roles()
 
+        # створюємо еталонний список ролей
         for i in res_list:
             roles.add_role(i)
 
+        # створюємо тестовий список ролей
+        test_roles = sm.Roles()
         for i in roles_str:
-            with self.assertRaises(ValueError):
-                roles.add_role(i)
+                test_roles.add_role(i, warning= False)
+
+        # порівнюємо тестовий список та контрольний список
+        self.assertListEqual(roles.list_of_roles, test_roles.list_of_roles )
+
+
 
     def test_get_employee_by_role(self):
         company = sm.Company("one")
@@ -363,12 +407,15 @@ class TestCompany(unittest.TestCase):
     emp1 = sm.Employee("David", "Bond", "DEV", 1)
     emp2 = sm.Employee("David", "Bond", "CEO")
     emp3 = sm.HourlyEmployee("Jack", "Daniels", "CEO")
-    emp4 = sm.SalariedEmployee("Jim", "beem", "DEV")
-    test_set = [emp1, emp2, emp3, emp4]
-    company = sm.Company("test")
+    emp4 = sm.HourlyEmployee("Chivas", "Regal", "CEO")
+    emp5 = sm.SalariedEmployee("Black", "label", "HR")
+    emp6 = sm.SalariedEmployee("Red", "label", "HR")
+    test_set = [emp1, emp2, emp3, emp4, emp5, emp6]
+    company = sm.Company("NFC")
+
 
     def test_validate_company_name(self):
-        names = ["", " ", "@ddf", "???", ".", ".!@", "asdf, asdf", 1, 1.5]
+        names = ["", " ", "@ddf", "???", ".", ".!@",1, 1.5]
         for name in names:
             with self.assertRaises(ValueError):
                 company = sm.Company(name)
@@ -377,6 +424,72 @@ class TestCompany(unittest.TestCase):
         for name in names:
             company = sm.Company(name)
             self.assertEqual(company.title, name.strip())
+
+    def test_add_roles(self):
+        test_set = ['deV', 'DEV', 'CEO', 'HR', 'hr', ' hr ']
+        company = sm.Company('NFC')
+
+        # тестування додавання посад без контролю дублікатів, передається строка
+        for item in test_set:
+            company.add_roles(item, warning=False)
+
+        # тестування додавання посад з контролем дублікатів, передається строка
+        company = sm.Company('NFC')
+        company.add_roles('DEV', 'CEO', 'HR', warning=False)
+        test_set = ['DEV', 'CEO', 'HR']
+        for item in test_set:
+            with self.assertRaises(ValueError):
+                company.add_roles(item, warning=True)
+
+        # тестування додавання посад без контролю дублікатів, передається екземпляр Role
+            for item in test_set:
+                company.add_roles(sm.Role(item), warning=False)
+
+        # тестування додавання посад з контролем дублікатів, передається екземпляр Role
+            company = sm.Company('NFC')
+            company.add_roles('DEV', 'CEO', 'HR', warning=False)
+            test_set = ['DEV', 'CEO', 'HR']
+            for item in test_set:
+                with self.assertRaises(ValueError):
+                    company.add_roles(sm.Role(item), warning=True)
+
+        # тестування додавання посад з контролем дублікатів, передається екземпляр Roles
+        company = sm.Company('NFC')
+        test_set = ['DEV', 'CEO', 'HR']
+        inst_roles=sm.Roles()
+
+        # створюємо тестовий набір посад в компанії
+        for item in test_set:
+            inst_roles.add_role(sm.Role(item))
+        company.add_roles(inst_roles)
+
+        # додаємо дублікати. ValueError.
+        with self.assertRaises(ValueError):
+            company.add_roles(inst_roles, warning=True)
+
+        # додаємо дублікати.
+        company.add_roles(inst_roles, warning=False)
+
+    def test_pay(self):
+        company = sm.Company("NFC")
+        company.add_roles('DEV', 'CEO', 'HR', warning=False)
+        for item in self.test_set:
+            company.add_employee(item)
+        for item in company.employees:
+            item.pay()
+
+    def test_payall(self):
+        """
+
+        :return:
+        тестування методу pay_all()
+        """
+        company = sm.Company("NFC")
+        company.add_roles('DEV', 'CEO', 'HR', warning=False)
+        for item in self.test_set:
+            company.add_employee(item)
+        company.pay_all()
+
 
     def test_validate_employees(self):
 
@@ -393,7 +506,7 @@ class TestCompany(unittest.TestCase):
             self.company.add_employee(item)
 
         company1 = sm.Company("one")
-        company1.add_employee(self.emp1, self.emp3, self.emp4)
+        company1.add_employee(self.emp1, self.emp3, self.emp4, self.emp5, self.emp6)
         self.assertListEqual(self.company.employees, company1.employees)
 
 

@@ -3,8 +3,10 @@ A very advanced employee management system
 
 """
 
-import logging
+from abc import abstractmethod
 from dataclasses import dataclass
+import re
+import logging
 from typing import List
 from settings import Param, LogParam
 
@@ -16,6 +18,11 @@ logger.setLevel(logging.INFO)
 # TODO
 @dataclass
 class Role:
+    """
+    Клас посада. Саме така реілізація, коли клас містить лише атрибут найменування посади, є спорною.
+    Такий клас повинен містити і інші ознаки посади, наприклад, посадовий оклад. Тоді цей клас наповнюється змістом.
+
+    """
     role: str
 
     def __init__(self, role: str) -> None:
@@ -27,9 +34,21 @@ class Role:
 
     @staticmethod
     def validate_name(role: str) -> bool:
+        """
+
+        :param role: str
+        :return:
+        Валідація найменування посади.
+        """
         return isinstance(role, str) and role.strip().isalpha()
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
+        """
+
+        :param other:
+        :return:
+        Без коментарів
+        """
         if isinstance(other, str):
             return self.role == other
         elif isinstance(other, Role):
@@ -41,15 +60,42 @@ class Role:
 # noinspection PyTypeChecker
 
 class Roles:
-    list_of_roles: List[Role] = []
+    """
+    Реалізація явища "штатний розпис", а по факту список посад.
+    Клас створений для контролю за відсутність дублікатів назв посад у компанії.
+    """
 
-    def add_role(self, name_role: str) -> None:
-        role_inst = Role(name_role)
+    def __init__(self) -> None:
+        self.list_of_roles: List[Role] = []
+
+    def __iter__(self):
+        self.index = 0
+        return self
+
+    def __next__(self)-> Role:
+
+        if self.index < len(self.list_of_roles):
+            self.index += 1
+            return self.list_of_roles[self.index - 1]
+        else:
+            raise StopIteration
+
+    def add_role(self, role_inst: Role, warning=True) -> None:
+        """
+
+        :param role_inst: екземпляр класу Role
+        :param warning: ознака чи здійснювати зупинку обрабки посади, у випадку виявлення дубліката найменування посади.
+                        Якщо True - така зупинка здіснюється
+        :return:
+        """
+        if isinstance(role_inst, str):
+            role_inst = Role(role_inst)
         if role_inst not in self.list_of_roles:
             self.list_of_roles.append(role_inst)
         else:
-            msg = f"{self} Role already exists: {name_role}"
-            raise ValueError(msg)
+            if warning:
+                msg = f"{self} Role already exists: {role_inst}"
+                raise ValueError(msg)
 
 
 # noinspection PyTypeChecker
@@ -60,17 +106,18 @@ class Employee:
     first_name: str
     last_name: str
     role: str
+    # початкове значення тривалості відпустки Param.VCTN_DAYS_INI
     vacation_days: int = Param.VCTN_DAYS_INI
 
     def __init__(self, first_name: str, last_name: str, role: str, vacation_days=Param.VCTN_DAYS_INI):
         """
 
-        :param first_name:
-        :param last_name:
-        :param role:
-        :param vacation_days:
+        :param first_name: ім'я
+        :param last_name: прізвище
+        :param role: посада (потребує доопрацювання, а саме логіно передавати Role instance)
+        :param vacation_days: Param.VCTN_DAYS_INI  # початкове значення тривалості відпустки
         Ініціалізація параметров та виклик функції, яка виконує валідацію значень.
-
+        !!! Метод автоматично перетворює ім'я та прізвище у формат capitalize()
         """
 
         if self.validate_str(first_name, last_name, role) and self.valadate_vacation_days(vacation_days):
@@ -89,7 +136,7 @@ class Employee:
             return self.first_name == other.first_name and self.last_name == other.last_name
 
         else:
-            msg=f"{other} is not Employee type"
+            msg = f"{other} is not Employee type"
             raise ValueError(msg)
 
     @property
@@ -101,12 +148,20 @@ class Employee:
 
         return " ".join(self.fullname)
 
+    @abstractmethod
+    def pay(self):
+        """
+
+        :return:
+        Абстрактний метод для виплати заробітної плати. Перенесений із класу Company. Його місце тут.
+        """
+        ...
+
     @staticmethod
     def validate_str(*args) -> bool:
         """
         :param param: вхідний парамерт
         :return: True, якщо відповідає вимогам.
-
         Функція перевіряє вхідний параметр на відповідність типу та вимогам до написання імені особи.
         """
         res = True
@@ -117,7 +172,6 @@ class Employee:
     @staticmethod
     def valadate_vacation_days(days: int):
         """
-
         :param days:
         :return:
         Функція виконує валідацію кількості днів відпустки
@@ -126,7 +180,6 @@ class Employee:
 
     def taking_holiday(self, num_days=Param.HLD_MIN_DAY.value) -> None:
         """
-
         :param num_days: кількість днів відпустки, що береться
         :return:
         Функція виконує процедуру надання певних днів відпустки. Кількість днів відпустки, що
@@ -155,7 +208,6 @@ class Employee:
 
     def taking_payout(self, num_days=1) -> None:
         """
-
         :param num_days: кількість днів, за які отримується грошова компенсація
         :return:
         Функція здійснює зменьшення залишку відпустки шляхом її зменьшення за рахунок днів, за які
@@ -166,7 +218,6 @@ class Employee:
         залишок відпустки зменшується на num_days, та здійснюється запис у логер.
         Якщо умова не дотримується, то здійснюється формування
         відповідного повідомлення та викликається raise ValueError(msg)
-
         """
 
         if not self.vacation_days < num_days and num_days > 0:
@@ -183,18 +234,6 @@ class Employee:
                       f"Requested: {num_days}"
 
             raise ValueError(msg)
-
-    def take_holiday(self, payout: bool = False) -> None:
-        """Take a single holiday or a payout vacation"""
-        # TODO
-        # функція іде на виліт, як не потрібна
-
-        if payout:
-            self.taking_holiday()
-        else:
-            self.taking_payout()
-
-        # noinspection PyTypeChecker
 
 
 @dataclass
@@ -237,7 +276,7 @@ class HourlyEmployee(Employee):
         """
 
         if self.amount + hours > Param.AMOUNT_LIMIT:
-            msg = f"{self} sum amount and hours > Param.AMOUNT_LIMIT = {Param.AMOUNT_LIMIT}" \
+            msg = f"{self} sum amount and hours > Param.AMOUNT_LIMIT = {Param.AMOUNT_LIMIT} " \
                   f"Amount hours: {self.amount}. Requested hours:{hours}"
             raise ValueError(msg)
 
@@ -251,6 +290,10 @@ class HourlyEmployee(Employee):
         else:
             self.raise_hours_log_work(hours)
 
+    def pay(self):
+        msg = ("Paying %s hourly rate of %.2f for %d hours") % (self, self.hourly_rate, self.amount)
+        logger.info(msg)
+
 
 # noinspection PyTypeChecker
 @dataclass
@@ -258,7 +301,6 @@ class SalariedEmployee(Employee):
     """Represents employees who are paid on a monthly salary base
     Максимальний розмір  salary обмежений параметром Param.SALARY_LIMIT.
     Salary може дорівнювати Param.SALARY_LIMIT, але не може бути більше його.
-
     """
 
     salary: int = Param.SALARY_DEFAULT
@@ -291,31 +333,33 @@ class SalariedEmployee(Employee):
         """
         return isinstance(salary, int) and salary > 0 and not salary > Param.SALARY_LIMIT
 
+    def pay(self):
+        msg = ("Paying monthly salary of %.2f to %s") % (self.salary, self)
+        logger.info(msg)
+
 
 # noinspection PyTypeChecker
 class Company:
     """A company representation"""
 
-    def __init__(self, title: str, employees: List[Employee] = None):
+    def __init__(self, title: str):
+        """"""
         if self.validate_name(title):
             self.title = title.strip()
+            self.employees = []
+            self.roles = Roles()
         else:
-            msg=f"{self} Not valid title: {title}"
+            msg = f"{self} Not valid title: {title}"
             raise ValueError(msg)
-        if self.validate_employees(employees):
-            if employees is None:
-                self.employees =[]
-            else:
-                self.employees = employees
 
 
     @staticmethod
-
-    def validate_employees(employees:List[Employee]) -> bool:
-        """Функція перевіряє вхідний параметр на відповідність типам вхідних даних"""
+    def validate_employees(employees: List[Employee]) -> bool:
+        """Функція перевіряє вхідний параметр на відповідність типам вхідних даних.
+        """
         if employees is not None:
             for item in employees:
-                if not isinstance(item,Employee):
+                if not isinstance(item, Employee):
                     return False
             return True
         else:
@@ -323,71 +367,106 @@ class Company:
 
     @staticmethod
     def validate_name(name: str) -> bool:
-        return isinstance(name, str) and name.strip().isalnum()
+        """
+
+        :param name: найменування компанії
+        :return:
+        Найбільш спірна реалізація. Трохи хаотична.
+        Логіка: якщо є заборонене сімволи у назві команії, які визначаються match, то повертається False.
+        Якщо після видалення з найменування дозволених символів legal_symb строка не відповідає вимогам isidentifier(),
+        то також повертається False
+        """
+
+        if isinstance(name, str):
+            bad_name = False
+            name = name.strip()
+            match = re.search(r'[~@#$%^*()_+|{}"?><]', name)
+            legal_symb = [",", ".", ':', ';', '!', '&', '?', " "]
+            copy_name = name
+            for symb in legal_symb:
+                copy_name = copy_name.replace(symb, '')
+            bad_name = not copy_name.isidentifier()
+            if match or name == '':
+                bad_name = True
+            return not bad_name
+        else:
+            return False
+
+    def add_roles(self, *args,  warning=True) -> None:
+        """
+
+        :param args: UNIT[str, Role, Roles]
+        :param warning: визначає чи зупиняти виконання у випадку виявлення дублікату найменування посади.
+        !!! Незалежно від параметру  warning дублікати посади не будуть додані до списку посад.
+        :return:
+        Метод здійснює додавання посад до компанії.
+
+        """
+        for arg in args:
+            if isinstance(arg, str):
+                inst_role = Role(arg)
+                self.roles.add_role(inst_role, warning=warning)
+
+            elif isinstance(arg, Role):
+                self.roles.add_role(arg, warning=warning)
+
+            elif isinstance(arg, Roles):
+                for item in arg:
+                    self.roles.add_role(item, warning=warning)
 
     def add_employee(self, *args):
+        """
+        :param args:
+        :return:
+        Метод здійснює додавання працівника до списку працівників компанії.
+        Метод здійснює контроль щодо неможливості додати працівника з таким самим іменем та прізвищем.
+        !!! Повідомлення про відмову додати дублікат працівника не реаоізовано.
+        """
         for arg in args:
             if isinstance(arg, Employee):
                 if arg not in self.employees:
                     self.employees.append(arg)
             else:
-                msg=f"{arg} is not type Employee"
+                msg = f"{arg} is not type Employee"
                 raise ValueError
 
+    def isrole(self, name_role: str) -> bool:
+        """
 
+        :param name_role:
+        :return:
+        Метод повертає озанку чи є посада name_role у списку посад
+        """
+        return name_role in self.roles
+
+    def add_roles_from_employees(self, emp_instance: List[Employee]) -> None:
+        """
+
+        :param emp_instance:
+        :return:
+        Додає працівників до компанії
+        """
+
+        for item in emp_instance:
+            if isinstance(item, Employee):
+                self.roles.add_role(item.role)
 
     def get_employees_by_role(self, employee_role: str) -> List[Employee]:
         """
         :param employee_role:
         :return:
-        Creating employees list according to the role
+        Повртає список працівників за ознакою посади
         """
         return list(filter(lambda x: x.role == employee_role, self.employees))
 
-    def get_ceos(self) -> List[Employee]:
-        """Return employees list with role of CEO"""
 
-        result = []
-        for employee in self.employees:
-            if employee.role == "CEO":
-                result.append(employee)
-        return result
-
-    def get_managers(self) -> List[Employee]:
-        """Return employees list with role of manager"""
-
-        result = []
-        for employee in self.employees:
-            if employee.role == "manager":
-                result.append(employee)
-        return result
-
-    def get_developers(self) -> List[Employee]:
-        """Return employees list with role of developer"""
-
-        result = []
-        for employee in self.employees:
-            if employee.role == "dev":
-                result.append(employee)
-        return result
-
-    @staticmethod
-    def pay(employee: Employee) -> None:
-        """Pay to employee"""
-
-        if isinstance(employee, SalariedEmployee):
-            msg = (
-                      "Paying monthly salary of %.2f to %s"
-                  ) % (employee.salary, employee)
-            logger.info(f"Paying monthly salary to {employee}")
-
-        if isinstance(employee, HourlyEmployee):
-            msg = (
-                      "Paying %s hourly rate of %.2f for %d hours"
-                  ) % (employee, employee.hourly_rate, employee.amount)
-            logger.info(msg)
 
     def pay_all(self) -> None:
-        """Pay all the employees in this company"""
+        """
 
-        # TODO: implement this method
+        :return:
+        Метод заплатити усім.
+        Той хто дочитав до цього місця, може отримати пляшку Chivas Regal, метро Палац спорту, Київ, до 25.12.2022
+        """
+        for item in self.employees:
+            item.pay()
