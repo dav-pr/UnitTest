@@ -6,6 +6,7 @@ A very advanced employee management system
 import logging
 from dataclasses import dataclass
 
+from typing import List
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -29,7 +30,7 @@ class Employee:
     def __str__(self) -> str:
         """Return a string version of an instance"""
 
-        return self.fullname
+        return str(self.fullname)
 
     def take_holiday(self, payout: bool = False) -> None:
         """Take a single holiday or a payout vacation"""
@@ -80,53 +81,75 @@ class SalariedEmployee(Employee):
 class Company:
     """A company representation"""
 
-    title: str
-    employees: list[Employee] = []
+    def __init__(self, title: str, employees: List[Employee]):
+        if self.validate(title, employees):
+            self.title = title
+            self.employees = employees
 
-    def get_ceos(self) -> list[Employee]:
+    def __repr__(self):
+        return self.title
+
+    def __str__(self):
+        return self.title
+
+    @staticmethod
+    def validate(title, employees):
+        """Функція перевіряє вхідний параметр на відповідність типам вхідних даних"""
+
+        res = True
+        if not isinstance(title.strip(), str):
+            res = False
+        for i in title:
+            res = False
+            if i.isalnum():
+                res = True
+                break
+        for employee in employees:
+            if not isinstance(employee, Employee):
+                res = False
+        return res
+
+    def get_employees_by_role(self, employee_role: str) -> List[Employee]:
+        """
+        :param employee_role:
+        :return:
+        Creating employees list according to the role
+        """
+        return list(filter(lambda x: x.role == employee_role, self.employees))
+
+    def get_ceos(self) -> List[Employee]:
         """Return employees list with role of CEO"""
 
-        result = []
-        for employee in self.employees:
-            if employee.role == "CEO":
-                result.append(employee)
-        return result
+        employee_role = "CEO"
+        return self.get_employees_by_role(employee_role)
 
-    def get_managers(self) -> list[Employee]:
+    def get_managers(self) -> List[Employee]:
         """Return employees list with role of manager"""
 
-        result = []
-        for employee in self.employees:
-            if employee.role == "manager":
-                result.append(employee)
-        return result
+        employee_role = "manager"
+        return self.get_employees_by_role(employee_role)
 
-    def get_developers(self) -> list[Employee]:
+    def get_developers(self) -> List[Employee]:
         """Return employees list with role of developer"""
 
-        result = []
-        for employee in self.employees:
-            if employee.role == "dev":
-                result.append(employee)
-        return result
+        employee_role = "dev"
+        return self.get_employees_by_role(employee_role)
 
     @staticmethod
     def pay(employee: Employee) -> None:
         """Pay to employee"""
 
         if isinstance(employee, SalariedEmployee):
-            msg = (
-                "Paying monthly salary of %.2f to %s"
-            ) % (employee.salary, employee)
-            logger.info(f"Paying monthly salary to {employee}")
+            msg = f"Paying monthly salary of {employee.salary:.2f} to {employee}"
+            logger.info(msg)
 
         if isinstance(employee, HourlyEmployee):
-            msg = (
-                "Paying %s hourly rate of %.2f for %d hours"
-            ) % (employee, employee.hourly_rate, employee.amount)
+            msg = f"Paying {employee} hourly rate of " \
+                  f"{employee.hourly_rate:.2f} for {employee.amount} hours"
             logger.info(msg)
 
     def pay_all(self) -> None:
         """Pay all the employees in this company"""
 
-        # TODO: implement this method
+        for employee in self.employees:
+            self.pay(employee)
